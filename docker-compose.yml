@@ -1,0 +1,15 @@
+version: '3.3'
+services:
+  scraper:
+    image: hls-c1-n1:5000/scraper:latest
+    restart: always
+<<<<<<< Updated upstream
+=======
+    volumes:
+      - "data/scraper.db:/usr/src/app/scraper.db"
+>>>>>>> Stashed changes
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname == hls-c1-n2]
+
