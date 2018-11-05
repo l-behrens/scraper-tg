@@ -1,4 +1,3 @@
-#
 FROM hls-c1-n1:5000/base_scraper 
 WORKDIR /usr/src/app
 COPY requirements.txt ./

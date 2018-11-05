@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from pprint import pprint
 
 from telegram.ext import Updater
@@ -68,25 +68,21 @@ helptxt = '''
     1. Filter hinzufuegen:
         Befehl:    /add <filter> <prio>
         Beispiel1:  /add https://www.ebay-kleinanzeigen.de/s-seite:2/cagiva/k0
-        Beispiel2:  /add https://www.ebay-kleinanzeigen.de/s-seite:2/cagiva/k0 h
     2. Filter loeschen
         Befehl     /del <filter>
-        Beispiel:  /del 1
+        Beispiel:  /del https://www.ebay-kleinanzeigen.de/s-seite:2/cagiva/k0
     3. Filter auflisten
         Befehl     /show
-
-    4. Filter heruterladen
-        Befehl     /list
 
     '''
 
 
-def send_msg(chat_id, text, parse_mode=telegram.ParseMode.MARKDOWN):
+def send_msg(chat_id, text, parse_mode=telegram.ParseMode.MARKDOWN, disable_preview=False):
 #    if not str(chat_id)==str(myid):
  #   chat_id = str(chat_id)
  #   text = str(text)
     updater.bot.send_message(chat_id=myid, text=text, parse_mode=parse_mode,
-                             disable_web_page_preview=False, reply_markup=None)
+                             disable_web_page_preview=disable_preview, reply_markup=None)
 #    updater.bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode,
 #                             disable_web_page_preview=False, reply_markup=None)
 #
@@ -108,7 +104,7 @@ def add(bot, update, args):
             url = re.sub("https://m.ebay", "https://www.ebay", url)
 
         data.new_filter(uid, url)
-        text="filter hinzugefügt!"
+        text="filter hinzugefuegt!"
     elif len(args) > 2:
         text=helptext
 
@@ -127,29 +123,47 @@ def delete(bot, update, args):
 
     send_msg(chat_id=update.message.chat_id, text=text)
 
+def show_me_everything():
+    uids = data.get_uids()
+
+    for uid in uids:
+        fltrs=data.get_filters(str(uid))
+
+        text = ''
+        i = 0
+        while fltrs:
+            if len(fltrs) >= 10:
+                text=' '.join(['<b>%s</b>: <a href=\"%s\">%s</a>\n' % (i*10+index, f, f) for index, f in enumerate(fltrs[:10])])
+                fltrs=fltrs[10:]
+                i+=1
+            else:
+                text=' '.join(['<b>%s</b>: <a href=\"%s\">%s</a>\n' % (i*10+index, f, f) for index, f in enumerate(fltrs)])
+            if text:
+                send_msg(chat_id=myid, text=str(text), parse_mode=telegram.ParseMode.HTML, disable_preview=True)
+                time.sleep(1)
 
 def show(bot, update):
-#    uid = str(update.message.chat_id)
-    uid = myid
+    uid = str(update.message.chat_id)
+    fltrs=data.get_filters(str(uid))
 
-    fltrs=data.get_filters('536516448')
-#    print(fltrs)
+    if uid==myid:
+        show_me_everything()
+        return
 
     text = ''
     i = 0
     while fltrs:
-        time.sleep(1)
-        text=' '.join(['<b>%s</b>: <a href=\"%s\">%s</a>\n' % (i*3+index, f, f) for index, f in enumerate(fltrs[:3])])
-        send_msg(chat_id=uid, text=str(text))
-        fltrs=fltrs[3:]
-        i+=1
-     #   elif len(fltrs) > 0:
-     #       text=' '.join(['%s: %s\n' % (i*10+index, f) for index, f in enumerate(fltrs[:10])])
-     #       send_msg(chat_id=uid, text=text)
-
-#    if fltrs:
-#    send_msg(chat_id=uid, text=' '.join(fltrs))
-
+        if len(fltrs) >= 10:
+            text=' '.join(['<b>%s</b>: <a href=\"%s\">%s</a>\n' % (i*10+index, f, f) for index, f in enumerate(fltrs[:10])])
+            fltrs=fltrs[5:]
+            i+=1
+        else:
+            text=' '.join(['<b>%s</b>: <a href=\"%s\">%s</a>\n' % (i*10+index, f, f) for index, f in enumerate(fltrs)])
+            send_msg(chat_id=uid, text=str(text), parse_mode=telegram.ParseMode.HTML, disable_preview=True)
+            break
+        if text:
+            send_msg(chat_id=uid, text=str(text), parse_mode=telegram.ParseMode.HTML, disable_preview=True)
+            time.sleep(1)
 
 def unknown(bot, update):
     text = ('\n').join(["Abenteuer Aklohol!", helptxt])
@@ -276,11 +290,11 @@ if __name__ == "__main__":
 
 #    j_queue.run_once(create_shelve, 0)
 #    j_queue.run_once(restore, 5)
-    j_queue.run_repeating(crawl_filters, interval=5, first=0)
-#    j_queue.run_repeating(backup_sync, interval=300, first=10)
+    j_queue.run_repeating(crawl_filters, interval=300, first=0)
+#    j_queue.run_repeating(backup_sync, interval=300, first=5)
 
     start_handler = CommandHandler('start', start)
-    show_handler = CommandHandler('show', formatted_list)
+    show_handler = CommandHandler('show', show)
     add_handler = CommandHandler('add', add, pass_args=True)
     del_handler = CommandHandler('del', delete, pass_args=True)
     #shell_handler = CommandHandler('sh', shell, pass_args=True)
